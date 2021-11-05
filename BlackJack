@@ -1,0 +1,237 @@
+#include <iostream>
+#include <cassert>
+#include <vector>
+#include <algorithm>
+#include <sstream>
+#include <string>
+
+enum Suit {
+    clubs,
+    hearts,
+    diamond,
+    spades,
+};
+
+enum Card_values { //Прочитал про enum class, как понял, вся разница в том
+//что обычный enum неявно приводится к int, в данном случае мне это 
+//в принципе не мешает, но в целом, что правильно? По ситуации глядеть или лучше
+//всегда использовать enum class?
+    ace = 1,
+    two = 2,
+    three = 3,
+    four = 4,
+    five = 5,
+    six = 6,
+    seven = 7,
+    eight = 8,
+    nine = 9,
+    ten = 10,
+    jack = 10,
+    queen = 10,
+    king = 10,
+    blackjack = 21, //Добавил константу целевого значения
+    bonusAce = 10, // Константа для увеличения очков за туз при недоборе
+};
+
+class Card {
+private:
+    Suit suit;
+    Card_values value;
+    bool position;
+public:
+    Card(Suit suit, Card_values value) : suit(suit), value(value) {
+        position = false;
+    }
+    Card_values getValue() {
+        return value;
+    }
+    void flip() {
+        position = !position;
+    }
+    int operator+ (Card& card) {
+        return static_cast<int>(value) + static_cast<int>(card.getValue());
+    }
+    int operator+ (int num) {
+        return static_cast<int>(value) + num;
+    }
+    int operator+ (Card_values num) {
+        return static_cast<int>(value) + static_cast<int>(num);
+    }
+    friend std::ostream& operator<< (std::ostream& out, const Card& card);
+};
+
+std::ostream& operator<< (std::ostream& out, const Card& card) { //Перегрузка оператора выводя для карт
+    if (!card.position) {
+        out << "XX";
+    }
+    else {
+        switch (card.suit) { //Подумал что выводить значениями по умолчанию от enum'a как то не камильфо (а строки присвоить константам енума как то не получилось сразу)
+            case clubs: {
+                out << "Clubs" << ' ' << card.value;
+            } break;
+            case hearts: {
+                out << "Hearts" << ' ' << card.value;
+            } break;
+            case diamond: {
+                out << "Diamond" << ' ' << card.value;
+            } break;
+            case spades: {
+                out << "Spades" << ' ' << card.value;
+            } break;
+        }
+    }
+    return out;
+}
+
+class Hand {
+protected:
+    std::vector<Card*> array;
+public:
+    Hand() = default;
+    void addCard(Card* card) {
+        array.push_back(card);
+    }
+    void clear() {
+        array.clear();
+    }
+    int getValue() {
+        int sum = 0;
+        size_t checkAce = 0; //Счетчик для учета тузов по 11 очков, на случай, 
+        //если перебор будет уже после начисления 11 очков
+        for (size_t i = 0; i < array.size(); ++i) {
+            if (array[i]->getValue() == ace) {
+                if (sum + (array[i]->getValue() + bonusAce) <= blackjack) {
+                    sum = sum + (array[i]->getValue() + bonusAce);
+                    checkAce++;
+                }
+                else {
+                    sum = sum + array[i]->getValue();
+                }
+            }
+            else {
+                sum = sum + array[i]->getValue();
+            }
+        }
+        while (sum > blackjack && checkAce > 0) { //Цикл отнимающий от тузов 10-ку при переборе, 
+        //если было начислено 11 
+            sum = sum - bonusAce;
+            checkAce--;
+        }
+        return sum;
+    }
+};
+
+class GenericPlayer : public Hand {
+protected:
+    std::string name;
+public:
+    GenericPlayer(std::string name) : name(name) {
+
+    }
+    virtual bool isHitting() = 0;
+    bool isBusted() {
+        if (getValue() > blackjack) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    void boost() {
+        std::cout << "Player: " << name << ", boosted" << std::endl;
+    }
+    friend std::ostream& operator<< (std::ostream& out, const GenericPlayer& player);
+};
+
+std::ostream& operator<< (std::ostream& out, const GenericPlayer& player) {
+    out << player.name << std::endl;
+    for (int i = 0; i < player.array.size(); ++i) {
+        out << '[' << *player.array[i] << ']';
+    }
+    return out;
+}
+
+class Player : public GenericPlayer {
+public:
+    Player(std::string name) : GenericPlayer(name) {
+
+    }
+    virtual bool isHitting() override {
+        char answer;
+        std::cout << "You need card?" << std::endl;
+        std::cin >> answer;
+        if (tolower(answer) == 'y') {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    void win() const {
+        std::cout << "Player " << name << " win!\n";
+    }
+    void lose() const {
+        std::cout << "Player " << name << " lose!\n";
+    }
+    void push() const {
+        std::cout << "Player " << name << " draw!\n";
+    }
+};
+
+class House : public GenericPlayer {
+public:
+    virtual bool isHitting() override {
+        if (getValue() <= 16) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    void flipFirstCard() {
+        array[0]->flip();
+    }
+};
+
+
+
+int main()
+{
+    Card card1(clubs, five);
+    Card card2(diamond, ace);
+    Card card3(diamond, three);
+    Card card4(hearts, ace);
+    Card card5(hearts, queen);
+    Card card6(spades, three);
+
+    Player player("Man");
+    player.addCard(&card1);
+    player.addCard(&card2);
+    player.addCard(&card3);
+    player.addCard(&card4);
+    player.addCard(&card5);
+    player.addCard(&card6);
+
+    std::cout << player.getValue() << std::endl;
+    if (player.isBusted()) {
+        player.boost();
+    }
+    else {
+        std::cout << "All ok" << std::endl;
+    }
+
+    if (player.isHitting()) {
+        std::cout << "Hold the man card" << std::endl;
+    }
+    else {
+        std::cout << "Well, in vain" << std::endl;
+    }
+
+    std::cout << card2 << std::endl;
+    card2.flip();
+    std::cout << card2 << std::endl;
+
+    std::cout << player;
+
+    return 0;
+}
