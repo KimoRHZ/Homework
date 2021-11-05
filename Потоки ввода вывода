@@ -1,0 +1,36 @@
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <limits>
+#include <climits>
+
+//===================================Задание-2============================================================
+std::ostream& endll(std::ostream& out) {
+    out << std::endl << std::endl;
+    //out.flush(); Закомментил, ради вопроса: По сути же endl, в том числе, и сбрасывает буфер, 
+    //так может оставить только строку с ним?
+    return out;
+}
+
+int main()
+{//==================================Задания-1-и-2==========================================================
+    bool check = false;
+    int x;
+    do {
+        std::cout << "Enter integer" << std::endl;
+        std::cin >> x;
+        if (std::cin.peek() != '\n' || std::cin.fail()) { //Проверяю что в цин 
+        //не остальось ничего лишнего (если есть, значит ввели что то кроме цифр) или нет ошибок.
+            std::cout << "Wrong input" << std::endl;
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); //Мне не нравилось
+            //видеть тут меджик намберс и нашел библиотеку limits
+        }
+        std::cout << "Your integer: " << std::endl << "..." << endll << x << std::endl; //Манипулятор endll
+        check = true;
+    } while (!check);
+
+
+
+    return 0;
+}
