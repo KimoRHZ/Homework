@@ -1,0 +1,172 @@
+#include <iostream>
+#include <vector>
+
+//=================================Задание-1====================================
+int division(int a, int b) {
+    if (b <= 0) {
+        throw "Division by zero";
+    }
+    int result = a / b;
+    return result;
+}
+
+//=================================Задание-2==================================== 
+class Ex {
+private:
+    int x;
+public:
+    Ex(int x) : x(x) {
+
+    }
+    int getX() {
+        return x;
+    }
+};
+
+class Bar {
+private:
+    int y;
+public:
+    Bar() {
+        y = 0;
+    }
+    void set(int a) {
+        if (y + a > 100) {
+            throw Ex(a * y); //Не уверен что верно понял задание
+        }
+        else {
+            y = a;
+        }
+    }
+};
+
+//===========================================Задание-3================================================================
+
+const size_t maxX = 10;
+const size_t maxY = 10;
+const char blank = '_';
+std::vector<std::vector<char>> field(maxX, std::vector<char>(maxY, blank));
+
+void printField() {
+    for (size_t i = 0; i < maxX; ++i) {
+        for (size_t j = 0; j < maxY; ++j) {
+            std::cout << '[' << field[i][j] << ']';
+        }
+        std::cout << std::endl;
+    }
+}
+
+class OffTheField {
+private:
+    int x;
+    int y;
+    int nX;
+    int nY;
+public:
+    OffTheField(int x, int y, int nX, int nY) : x(x), y(y), nX(nX), nY(nY) {
+
+    }
+    void getError() {
+        std::cout << "Position is outside of area: " << x << ' ' << y << std::endl;
+        std::cout << "Route: " << nX << ' ' << nY << std::endl;
+        printField();
+    }
+};
+
+class IllegalCommand {
+private:
+    int x;
+    int y;
+    int nX;
+    int nY;
+public:
+    IllegalCommand(int x, int y, int nX, int nY) : x(x), y(y), nX(nX), nY(nY) {
+
+    }
+    void getError() {
+        std::cout << "Position: " << x << ' ' << y << std::endl;
+        std::cout << "Route: " << nX << ' ' << nY << std::endl;
+        field[nX][nY] = 'X';
+        printField();
+        field[nX][nY] = blank;
+    }
+};
+
+class Robot {
+protected:
+    const char view = 'T';
+    const int step = 1;
+    int x;
+    int y;
+public:
+    Robot(int x, int y) : x(x), y(y) {
+        field[x][y] = view;
+    }
+    void move(int nX, int nY) {
+        if ((nX == x + step || nX == x - step) && (nY == y + step || nY == y - step)) {
+            throw IllegalCommand(x, y, nX, nY);
+        }
+        if ((nX > x + step || nX < x - step) && nX != x) {
+            throw IllegalCommand(x, y, nX, nY);
+        }
+        else if ((nY > y + step || nY < y - step) && nY != y) {
+            throw IllegalCommand(x, y, nX, nY);
+        }
+        if (nX > maxX - 1 || nY > maxY - 1) {
+            throw OffTheField(x, y, nX, nY);
+        }
+        field[x][y] = blank;
+        x = nX;
+        y = nY;
+        field[x][y] = view;
+    }
+};
+
+int main()
+{
+    //=================================Задание-1====================================
+    try {
+        int result = division(65, 5);
+        std::cout << result << std::endl;
+//=================================Задание-2====================================
+        Bar var;
+        int inp;
+        do {
+            std::cout << "Input number \n";
+            std::cin >> inp;
+            var.set(inp);
+        } while(inp);
+//=================================Задание-3====================================  
+        Robot BroBot(4, 4);
+        printField();
+        char answer = 'n';
+        std::cout << "Moving brobot? y/n" << std::endl;
+        std::cin >> answer;
+        int x;
+        int y;
+        while (answer == 'y') {
+            std::cout << "Input coord" << std::endl;
+            std::cin >> x;
+            std::cin >> y;
+            BroBot.move(x, y);
+            printField();
+        }
+    }
+    catch (const char* exception) {
+        std::cerr << "Error: " << exception << std::endl;
+    }
+    catch (Ex& err) {
+        std::cerr << "Error: ";
+        err.getX();
+    }
+    catch (IllegalCommand& err) {
+        std::cerr << "Error";
+        err.getError();
+    }
+    catch (OffTheField& err) {
+        std::cerr << "Error";
+        err.getError();
+    }
+
+    return 0;
+}
