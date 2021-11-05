@@ -1,0 +1,79 @@
+#include <iostream>
+#include <string>
+
+//=============================Задание-1========================================
+template<typename T>
+class Pair1 {
+private:
+    T val1;
+    T val2;
+public:
+    Pair1(const T& val1, const T& val2) : val1(val1), val2(val2) {
+
+    }
+    T first() {
+        return val1;
+    }
+    T second() const {
+        return val2;
+    }
+};
+//=============================Задание-2========================================
+template<typename T, typename S>
+class Pair {
+private:
+    T val1;
+    S val2;
+public:
+    Pair(const T& val1, const S& val2) : val1(val1), val2(val2) {
+
+    }
+    T first() {
+        return val1;
+    }
+    S second() {
+        return val2;
+    }
+};
+//=============================Задание-3========================================
+template<typename S>
+class StringValuePair : public Pair<std::string, S> {
+public:
+    StringValuePair(const std::string val1, S val2) : Pair<std::string, S>(val1, val2) {
+
+    }
+};
+
+
+int main()
+{
+    double x;
+    double y;
+    bool check = false;
+    while (!check) { //Попробовал написать функцию для ввода сразу нескольких значений
+        std::cout << "Enter two values:\n";
+        std::cin >> x;
+        std::cin.ignore(1, ',') >> y; //Тут игнорирую запятую между числами
+        if (std::cin.fail()) {
+            std::cin.clear(); //Если ввели что то лишнее, очищаю cin и прошу заново
+            std::cin.ignore(1000, '\n');
+        }
+        else {
+            check = !check;
+        }
+    }
+    Pair1<double> p2(x, y);
+    std::cout << p2.first() << ' ' << p2.second() << std::endl;
+    Pair1<int> p1(6, 9);
+    std::cout << p1.first() << ' ' << p1.second() << std::endl;
+
+    Pair<int, double> p3(6, 7.8);
+    std::cout << "Pair: " << p3.first() << ' ' << p3.second() << '\n';
+    Pair<double, int> p4(3.4, 5);
+    std::cout << "Pair: " << p4.first() << ' ' << p4.second() << '\n';
+
+    StringValuePair<int> svp("Amazing", 7);
+    std::cout << "Pair: " << svp.first() << ' ' << svp.second() << '\n';
+
+    return 0;
+}
