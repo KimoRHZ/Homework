@@ -1,0 +1,189 @@
+#include <iostream>
+
+//==========================================Реализация shared_ptr=======================================================================
+template <typename T>
+class Shared_ptr { //Только не смог придумать как быть с массивами
+private:
+    T* ptr;
+    size_t* count; //Общий счетчик ссылок для разных указателей
+public:
+    Shared_ptr() : ptr(nullptr), count(nullptr) {
+
+    }
+    Shared_ptr(T* ptr) : ptr(ptr), count(new size_t(1)) {
+
+    }
+    Shared_ptr(Shared_ptr<T>& other) : count(other.count), ptr(other.ptr) { //Если появляется новый указатель на тот же эелемент, то инкрементирую общий счетчик
+        (*count)++;
+    }
+    Shared_ptr<T> operator= (Shared_ptr<T>& other) { //Перегрузка оператора =
+        if (this != &other) { //Если указатели не равны
+            if (count) { //Проверяю что счетик ссылок больше нуля
+                if (*count == 1) { //Если ссылка одна, то уничтожаю элементы текущего указателя
+                    delete count;
+                    delete ptr;
+                }
+                else (*count)--; //Если больше 1, то декрементирую счетчик
+            }
+
+            ptr = other.ptr; //После в текущий указатель записываю новый
+            count = other.count;
+            (*count)++; //Увеличиваю счетчик
+        }
+        return *this; //Возвращаю текущий, указывающий на новый элемент
+    }
+    ~Shared_ptr() { //При деконструкции проверяю что счетчик не нулевой
+        if (count) {
+            if (*count == 1) { //Если одна ссылка уничтожаю объект
+                delete count;
+                delete ptr;
+            }
+            else (*count)--; //Если больше 1, то просто декрементирую счетчик
+        }
+    }
+    size_t getCount() const { //Запрос кол-ва ссылок на элемент
+        return (count) ? *count : 0;
+    }
+    T& operator* () const {
+        return *ptr;
+    }
+    T* operator-> () const {
+        return ptr;
+    }
+};
+
+//==========================================Задание-1===================================================================================
+class Date {
+private:
+    enum maxDate { //Константы для лимитов значений
+        maxDay = 31,
+        maxMonth = 12,
+    };
+    unsigned int day;
+    unsigned int month;
+    unsigned int year;
+public:
+    Date() {
+        day = 1;
+        month = 1;
+        year = 1970;
+    }
+    Date(unsigned int day, unsigned int month, unsigned int year) : day(day), month(month), year(year) { //Сначала записываю значения в переменные
+        if (this->day > maxDay) { //После проверяю на корректность и если что, прошу пользователя указать верные
+            do {
+                std::cout << "Error! Input correct day" << std::endl;
+                std::cin >> this->day;
+            } while (this->day > maxDay);
+        }
+        if (this->month > maxMonth) {
+            do {
+                std::cout << "Error! Input correct month" << std::endl;
+                std::cin >> this->month;
+            } while (this->month > maxMonth);
+        }
+    }
+    void setDay(unsigned int uDay) {
+        if (uDay > maxDay) {
+            do {
+                std::cout << "Error! Input correct day";
+                std::cin >> uDay;
+            } while (uDay > maxDay);
+        }
+        day = uDay;
+    }
+    void setMonth(unsigned int uMonth) {
+        if (uMonth > maxMonth) {
+            do {
+                std::cout << "Error! Input correct month";
+                std::cin >> uMonth;
+            } while (uMonth > maxMonth);
+        }
+        month = uMonth;
+    }
+    void setYear(unsigned int uYear) {
+        year = uYear;
+    }
+    int getDay() const {
+        return day;
+    }
+    int getMonth() const {
+        return month;
+    }
+    int getYear() const {
+        return year;
+    }
+    friend std::ostream& operator<< (std::ostream& out, Date& date); //Перегрузка оператора вывода
+};
+
+std::ostream& operator<< (std::ostream& out, Date& date) {
+    out << date.day << '.' << date.month << '.' << date.year << std::endl;
+    return out;
+}
+
+std::ostream& operator<< (std::ostream& out, Shared_ptr<Date> &date) { //Перегрузка оператора вывода для указателя на класс Date
+    out << date->getDay() << '.' << date->getMonth() << '.' << date->getYear() << std::endl;
+    return out;
+}
+
+//===========================================Задание-2==================================================================================
+Shared_ptr<Date> compareDate(Shared_ptr<Date>& date1, Shared_ptr<Date>& date2) { //Сравнение дат
+    if (date1->getYear() > date2->getYear()) { //Если год больше, то очивидно дата больше
+        return date1;
+    }
+    else if (date1->getYear() < date2->getYear()) {
+        return date2;
+    }
+    else {
+        if (date1->getMonth() > date2->getMonth()) { //Если года равны в дело идут месяцы
+            return date1;
+        }
+        else if (date1->getMonth() < date2->getMonth()) {
+            return date2;
+        }
+        else {
+            if (date1->getDay() > date2->getDay()) { //И только в конце дни
+                return date1;
+            }
+            else if (date1->getDay() < date2->getDay()) {
+                return date2;
+            }
+            else {
+                return date1;
+            }
+        }
+    }
+}
+
+void swap_DatePtr(Shared_ptr<Date> &date1, Shared_ptr<Date> &date2) { //Перемещение значений указателей
+    Shared_ptr<Date> tmp(date2);
+    date2 = date1;
+    date1 = tmp;
+}
+
+int main() {
+//============================================Задание-1================================================================================
+    Date day1(20, 10, 2021);
+    std::cout << day1;
+    Shared_ptr<Date> today(new Date(20, 10, 2021));
+    std::cout << today->getDay() << std::endl;
+    std::cout << today->getMonth() << std::endl;
+    std::cout << today->getYear() << std::endl;
+    std::cout << today;
+    Shared_ptr<Date> date(today);
+    std::cout << date;
+    std::cout << date.getCount() << std::endl; //Насколько понял по заданию тут при перемешении значения должен один из указателей остаться пустым, но я написал шаред птр, так что оба не нулевые
+    std::cout << today.getCount() << std::endl;
+//============================================Задание-2==============================================================================
+    Shared_ptr<Date> date1(new Date(25, 11, 2021));
+    Shared_ptr<Date> date2(new Date(21, 11, 2021));
+    std::cout << date1;
+    std::cout << date2;
+    std::cout << *compareDate(date1, date2); //Вот тут не совсем очевиден для меня такой момент, я передаю в функцию ссылку, при возврате, 
+    //соответственно, тоже получаю ссылку, но работать эта строка может только пока я отдаю указатель на функцию. В противном случае ругается что нет оператора << для этого типа. 
+    //Почему? Ведь возвращается Shared_ptr<Date> &date
+    swap_DatePtr(date1, date2);
+    std::cout << date1;
+    std::cout << date2;
+
+    return 0;
+}
